@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPK Supplier Batu Skrining — PT Conbloc Internusa</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<!-- Tambahan Library Chart.js dan SheetJS (Untuk Export/Import Excel) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+<div id="login-wrap">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="logo-ring"><i class="ti ti-building-factory-2"></i></div>
+      <h1>PT Conbloc Internusa</h1>
+      <p>Sistem Pendukung Keputusan Supplier Batu Skrining</p>
+    </div>
+    <div class="login-field">
+      <label>Username</label>
+      <div class="field-icon">
+        <i class="ti ti-user prefix"></i>
+        <input type="text" id="li-user" placeholder="Masukkan username" autocomplete="off">
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <div class="field-icon">
+        <i class="ti ti-lock prefix"></i>
+        <input type="password" id="li-pass" placeholder="Masukkan password">
+        <button class="eye-btn" onclick="toggleEye()" type="button"><i class="ti ti-eye" id="eye-ic"></i></button>
+      </div>
+    </div>
+    <div class="login-err" id="li-err">Username atau password salah.</div>
+    <button class="btn-login" onclick="doLogin()">Masuk</button>
+  </div>
+</div>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <i class="ti ti-building-factory-2"></i><span>Conbloc SPK</span>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-item active" data-pg="dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-item" data-pg="supplier"><i class="ti ti-users"></i>Data Supplier</div>
+      <div class="nav-item" data-pg="riwayat"><i class="ti ti-clipboard-list"></i>Riwayat Pemesanan</div>
+      <div class="nav-item" data-pg="ahp"><i class="ti ti-adjustments-horizontal"></i>Perhitungan AHP</div>
+      <div class="nav-item" data-pg="tlf"><i class="ti ti-calculator"></i>Perhitungan Kerugian (TLF)</div>
+    </nav>
+    <div class="sb-footer">PT Conbloc Internusa</div>
+  </aside>
+
+  <header class="topbar">
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <i class="ti ti-user-circle"></i>
+        <div><div class="uname" id="tp-name">Admin</div><div class="urole" id="tp-role">Administrator</div></div>
+      </div>
+      <button class="btn-out" onclick="doLogout()"><i class="ti ti-logout"></i>Keluar</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div id="page-dashboard" class="page active">
+      <div class="ph"><h2>Dashboard</h2></div>
+      <div class="grid-4">
+        <div class="card metric-card">
+          <div class="mic-icon" style="background:rgba(15,43,91,.1)"><i class="ti ti-users" style="color:var(--navy);font-size:20px"></i></div>
+          <div class="mic-lbl">Total Supplier</div>
+          <div class="mic-val" id="d-total-sup">0</div>
+        </div>
+        <div class="card metric-card">
+          <div class="mic-icon" style="background:var(--green-bg)"><i class="ti ti-trophy" style="color:var(--green);font-size:20px"></i></div>
+          <div class="mic-lbl">Supplier Terpilih</div>
+          <div class="mic-val" style="font-size:16px" id="d-best-sup">—</div>
+          <div class="mic-sub" id="d-best-loss">—</div>
+        </div>
+        <div class="card metric-card">
+          <div class="mic-icon" style="background:var(--red-bg)"><i class="ti ti-trending-up" style="color:var(--red);font-size:20px"></i></div>
+          <div class="mic-lbl">Kenaikan Harga</div>
+          <div class="mic-val" style="color:var(--red)">+36,63%</div>
+          <div class="mic-sub">vs supplier sebelumnya</div>
+        </div>
+        <div class="card metric-card">
+          <div class="mic-icon" style="background:var(--yellow-bg)"><i class="ti ti-receipt" style="color:var(--yellow);font-size:20px"></i></div>
+          <div class="mic-lbl">Total Order</div>
+          <div class="mic-val" id="d-total-order">0</div>
+          <div class="mic-sub">Sep 2025 – Feb 2026</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Ranking Kerugian Supplier (Top 10)</div>
+          <div id="d-ranking-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bobot Kriteria AHP</div>
+          <div class="chart-anti-overlap" style="height: 340px;">
+            <canvas id="chart-ahp-dash"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Total Kerugian per Supplier (Top 10)</div>
+        <div class="chart-anti-overlap">
+          <canvas id="chart-tlf-dash"></canvas>
+        </div>
+        <div id="d-tlf-action"></div>
+      </div>
+    </div>
+
+    <div id="page-supplier" class="page">
+      <div class="ph">
+        <h2>Data Supplier</h2>
+        <div class="ph-actions">
+          <div class="search-box"><i class="ti ti-search"></i><input type="text" id="sup-search" placeholder="Cari supplier..." oninput="renderSupplier()"></div>
+          <button class="btn btn-outline btn-sm" onclick="exportExcel('supplier','Data_Supplier')"><i class="ti ti-file-export"></i>Export Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="importSupplier()"><i class="ti ti-file-import"></i>Import File</button>
+          <button class="btn btn-primary btn-sm" onclick="openSupModal()"><i class="ti ti-plus"></i>Tambah Supplier</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table id="tbl-supplier">
+            <thead><tr><th>Kode</th><th>Nama Supplier</th><th>Nama Angkutan</th><th>Jenis Material</th><th style="text-align:right">Harga Material (Rp/m³)</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="sup-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <input type="file" id="import-sup-file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display:none" onchange="handleImportFile(event, 'supplier')">
+    </div>
+
+    <div id="page-riwayat" class="page">
+      <div class="ph">
+        <h2>Riwayat Pemesanan</h2>
+        <div class="ph-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportExcel('riwayat','Riwayat_Pemesanan')"><i class="ti ti-file-export"></i>Export Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="importRiwayat()"><i class="ti ti-file-import"></i>Import File</button>
+          <button class="btn btn-primary btn-sm" onclick="openRiwModal()"><i class="ti ti-plus"></i>Tambah Order</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table id="tbl-riwayat">
+            <thead><tr><th>No Order</th><th>Bulan</th><th>Supplier</th><th>Material</th><th style="text-align:right">Qty Order</th><th style="text-align:right">Qty Datang</th><th style="text-align:right">Reject %</th><th style="text-align:right">Harga/m³</th><th style="text-align:right">Terlambat</th><th>Aksi</th></tr></thead>
+            <tbody id="riw-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <input type="file" id="import-file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display:none" onchange="handleImportFile(event, 'riwayat')">
+    </div>
+
+    <div id="page-ahp" class="page">
+      <div class="ph">
+        <h2>Perhitungan AHP</h2>
+        <div class="ph-actions">
+          <button class="btn btn-outline btn-sm" onclick="resetAHP()"><i class="ti ti-refresh"></i>Reset Default</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="ti ti-printer"></i>Cetak</button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="ahpTab(0)">1. Tingkat Kepentingan</button>
+        <button class="tab-btn" onclick="ahpTab(1)">2. Matriks Selisih</button>
+        <button class="tab-btn" onclick="ahpTab(2)">3. Matriks Perbandingan</button>
+        <button class="tab-btn" onclick="ahpTab(3)">4. Bobot &amp; Konsistensi</button>
+      </div>
+
+      <div id="ahp-p0" class="tab-pane active">
+        <div class="card">
+          <div class="card-title">Tingkat Kepentingan Kriteria (dari Rekap Kuesioner)</div>
+          <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Ubah nilai rata-rata kuesioner, lalu klik <strong>Hitung Otomatis</strong> untuk memperbarui ranking dan seluruh perhitungan AHP.</span></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Kode</th><th>Kriteria</th><th style="text-align:center">Nilai Rata-Rata Kuesioner</th><th style="text-align:center">Tingkat Kepentingan (Rank)</th></tr></thead>
+              <tbody id="ahp-step1-tbody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:16px"><button class="btn btn-primary" onclick="hitungAHP()"><i class="ti ti-calculator"></i>Hitung Otomatis</button></div>
+        </div>
+      </div>
+
+      <div id="ahp-p1" class="tab-pane">
+        <div class="card card-matrix">
+          <div class="card-title">Matriks Selisih Tingkat Kepentingan</div>
+          <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Nilai = TK<sub>baris</sub> &minus; TK<sub>kolom</sub>. <strong style="color:var(--navy2);">Negatif</strong> = baris lebih penting dari kolom. <strong>Positif</strong> = baris kurang penting.</span></div>
+          <div class="tbl-wrap"><table class="mtx" id="ahp-selisih"></table></div>
+        </div>
+      </div>
+
+      <div id="ahp-p2" class="tab-pane">
+        <div class="card card-matrix">
+          <div class="card-title">Matriks Perbandingan Berpasangan (Skala AHP)</div>
+          <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Konversi: selisih 0→1, −1→2, −2→3, −3→4, −4→5, −5→6. Selisih positif → reciprocal (1/n). Contoh: A1 vs A2 selisih −5 → 6,000. A2 vs A1 selisih +5 → 1/6 = 0,167.</span></div>
+          <div class="tbl-wrap"><table class="mtx" id="ahp-compare"></table></div>
+        </div>
+      </div>
+
+      <div id="ahp-p3" class="tab-pane">
+        <div class="ahp-grid-2 mb20">
+          <div class="card">
+            <div class="card-title">Normalisasi &amp; Bobot Kriteria</div>
+            <div class="tbl-wrap"><table id="ahp-bobot-tbl">
+              <thead><tr><th>Kriteria</th><th style="text-align:center">Jumlah Baris</th><th style="text-align:center">Bobot</th><th>%</th></tr></thead>
+              <tbody id="ahp-bobot-tbody"></tbody>
+            </table></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Diagram Bobot Kriteria</div>
+            <div class="chart-anti-overlap">
+              <canvas id="chart-ahp-main"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="ahp-grid-3">
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 8px;">Nilai Indeks Kriteria</div>
+            <div class="tbl-wrap"><table id="ahp-idx-tbl">
+              <thead><tr><th>Kriteria</th><th style="text-align:center">Weighted Sum</th><th style="text-align:center">Indeks</th></tr></thead>
+              <tbody id="ahp-idx-tbody"></tbody>
+            </table></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 8px;">Hasil Konsistensi</div>
+            <div class="stat-row"><span class="sk">λ maks</span><span class="sv" id="ahp-lambda">—</span></div>
+            <div class="stat-row"><span class="sk">n (kriteria)</span><span class="sv">6</span></div>
+            <div class="stat-row"><span class="sk">CI = (λ−n)/(n−1)</span><span class="sv" id="ahp-ci">—</span></div>
+            <div class="stat-row"><span class="sk">RI (n=6)</span><span class="sv">1,24</span></div>
+            <div class="stat-row"><span class="sk">CR = CI / RI</span><span class="sv" id="ahp-cr">—</span></div>
+            <div style="margin-top:14px" id="ahp-cr-badge"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 8px;">Kesimpulan</div>
+            <p style="font-size:13.5px;color:var(--text2);line-height:1.6" id="ahp-conclusion">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-tlf" class="page">
+      <div class="ph">
+        <h2>Perhitungan Kerugian (Taguchi Loss Function)</h2>
+        <div class="ph-actions">
+          <button class="btn btn-outline btn-sm" onclick="resetTLF()"><i class="ti ti-refresh"></i>Reset Default</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="ti ti-printer"></i>Cetak</button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="tlfTab(0)">1. Konstanta Kerugian (k)</button>
+        <button class="tab-btn" onclick="tlfTab(1)">2. Data Aktual Supplier</button>
+        <button class="tab-btn" onclick="tlfTab(2)">3. Nilai Kerugian L(y)</button>
+        <button class="tab-btn" onclick="tlfTab(3)">4. Total Kerugian &amp; Ranking</button>
+      </div>
+
+      <div id="tlf-p0" class="tab-pane active">
+        <div class="ahp-grid-2">
+          <div class="card">
+            <div class="card-title">Kriteria Smaller the Better (STB)</div>
+            <div class="alert alert-info" style="padding: 10px; margin-bottom: 12px;"><i class="ti ti-info-circle"></i><span>A1, A2, A3, A4. Rumus: k = A / &Delta;&sup2;</span></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Kriteria</th><th style="text-align:right">A (Rp) — Kerugian 6 Bulan</th><th style="text-align:right">&Delta; — Toleransi</th><th style="text-align:right">k</th></tr></thead>
+              <tbody id="k-stb-body"></tbody>
+            </table></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Kriteria Larger the Better (LTB)</div>
+            <div class="alert alert-info" style="padding: 10px; margin-bottom: 12px;"><i class="ti ti-info-circle"></i><span>A5, A6. Rumus: k = A &times; &Delta;&sup2;</span></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Kriteria</th><th style="text-align:right">A (Rp) — Kerugian 6 Bulan</th><th style="text-align:right">&Delta; — Std. Deviasi</th><th style="text-align:right">k</th></tr></thead>
+              <tbody id="k-ltb-body"></tbody>
+            </table></div>
+            <p style="font-size:12px; color:var(--text3); margin-top:12px; line-height:1.4;">*Nilai &Delta; untuk A5 dan A6 dihitung dari standar deviasi data aktual semua supplier.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="tlf-p1" class="tab-pane">
+        <div class="card">
+          <div class="card-title">Data Aktual Kinerja Supplier (Sep 2025 – Feb 2026)</div>
+          <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Nilai diambil dari rata-rata riwayat pemesanan. Sel merah = melebihi toleransi. Anda dapat mengedit nilai A1-A6 secara manual di sini.</span></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">A1 Reject (%)</th><th style="text-align:right">A2 Harga (Rp/m³)</th><th style="text-align:right">A3 Terlambat (hr)</th><th style="text-align:right">A4 Volume (m³)</th><th style="text-align:right">A5 Pelayanan</th><th style="text-align:right">A6 Konsistensi</th></tr></thead>
+              <tbody id="tlf-data-body"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:16px"><button class="btn btn-primary" onclick="hitungTLF()"><i class="ti ti-calculator"></i>Hitung Ulang</button></div>
+        </div>
+      </div>
+
+      <div id="tlf-p2" class="tab-pane">
+        <div class="card">
+          <div class="card-title">Nilai Kerugian L(y) per Kriteria per Supplier</div>
+          <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>STB: L(y) = k &times; y&sup2; &nbsp;|&nbsp; LTB: L(y) = k / y&sup2;</span></div>
+          <div class="tbl-wrap">
+            <table id="tbl-ly">
+              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">L(y) A1</th><th style="text-align:right">L(y) A2</th><th style="text-align:right">L(y) A3</th><th style="text-align:right">L(y) A4</th><th style="text-align:right">L(y) A5</th><th style="text-align:right">L(y) A6</th></tr></thead>
+              <tbody id="ly-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tlf-p3" class="tab-pane">
+        <div class="card mb20">
+          <div class="card-title">Total Kerugian Supplier (Bobot Kriteria AHP &times; Nilai L(y))</div>
+          <div class="alert alert-info mb16"><i class="ti ti-info-circle"></i><span>Total Kerugian = &Sigma; (Bobot Kriteria &times; L(y) per Kriteria). Supplier dengan total kerugian terkecil = prioritas utama.</span></div>
+          <div class="tbl-wrap">
+            <table id="tbl-ranking">
+              <thead><tr><th>Rank</th><th>Kode</th><th>Supplier</th><th style="text-align:right">w×L A1</th><th style="text-align:right">w×L A2</th><th style="text-align:right">w×L A3</th><th style="text-align:right">w×L A4</th><th style="text-align:right">w×L A5</th><th style="text-align:right">w×L A6</th><th style="text-align:right">Total Kerugian</th><th>Status</th></tr></thead>
+              <tbody id="rank-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Grafik Ranking Supplier berdasarkan Total Kerugian</div>
+          <div class="chart-anti-overlap">
+            <canvas id="chart-tlf-main"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="modal-sup" class="modal-bg">
+  <div class="modal-box">
+    <div class="modal-hd"><h3 id="msup-title">Tambah Supplier</h3><button class="modal-close" onclick="closeModal('modal-sup')"><i class="ti ti-x"></i></button></div>
+    <div class="frow frow-2">
+      <div class="fgrp"><label>Kode Supplier</label><input type="text" id="ms-kode" placeholder="S1"><div class="ferr" id="e-ms-kode">Wajib diisi.</div></div>
+      <div class="fgrp"><label>Status</label><select id="ms-status"><option>Aktif</option><option>Nonaktif</option></select></div>
+    </div>
+    <div class="fgrp"><label>Nama Supplier</label><input type="text" id="ms-nama" placeholder="Nama lengkap supplier"><div class="ferr" id="e-ms-nama">Wajib diisi.</div></div>
+    <div class="fgrp"><label>Nama Angkutan</label><input type="text" id="ms-angkutan" placeholder="Nama jasa angkutan (kosong jika tidak ada)"></div>
+    <div class="fgrp"><label>Jenis Material</label><input type="text" id="ms-material" placeholder="Batu Skrining" value="Batu Skrining"></div>
+    <div class="fgrp"><label>Harga Material (Rp/m³)</label><input type="number" id="ms-harga" placeholder="185000"><div class="ferr" id="e-ms-harga">Masukkan angka positif.</div></div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-sup')">Batal</button>
+      <button class="btn btn-primary" onclick="saveSupplier()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-riw" class="modal-bg">
+  <div class="modal-box wide">
+    <div class="modal-hd"><h3 id="mriw-title">Tambah Order</h3><button class="modal-close" onclick="closeModal('modal-riw')"><i class="ti ti-x"></i></button></div>
+    <div class="frow frow-2">
+      <div class="fgrp"><label>No Order</label><input type="text" id="mr-no" placeholder="ORD-001"><div class="ferr" id="e-mr-no">Wajib diisi.</div></div>
+      <div class="fgrp"><label>Bulan</label><input type="month" id="mr-bulan"></div>
+    </div>
+    <div class="frow frow-2">
+      <div class="fgrp"><label>Supplier</label><select id="mr-sup"><option value="">-- Pilih Supplier --</option></select><div class="ferr" id="e-mr-sup">Pilih supplier.</div></div>
+      <div class="fgrp"><label>Jenis Material</label><input type="text" id="mr-material" value="Batu Skrining"></div>
+    </div>
+    <div class="frow frow-3">
+      <div class="fgrp"><label>Qty Order (m³)</label><input type="number" id="mr-qty-order" placeholder="100"><div class="ferr" id="e-mr-qty">Wajib diisi.</div></div>
+      <div class="fgrp"><label>Qty Datang (m³)</label><input type="number" id="mr-qty-datang" placeholder="100"></div>
+      <div class="fgrp"><label>Reject (%)</label><input type="number" id="mr-reject" placeholder="0" step="0.01"></div>
+    </div>
+    <div class="frow frow-2">
+      <div class="fgrp"><label>Harga (Rp/m³)</label><input type="number" id="mr-harga" placeholder="185000"></div>
+      <div class="fgrp"><label>Keterlambatan (hari)</label><input type="number" id="mr-terlambat" placeholder="0" step="0.001"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-riw')">Batal</button>
+      <button class="btn btn-primary" onclick="saveRiwayat()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-confirm" class="modal-bg">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-hd"><h3>Konfirmasi Hapus</h3><button class="modal-close" onclick="closeModal('modal-confirm')"><i class="ti ti-x"></i></button></div>
+    <p class="confirm-txt" id="confirm-msg" style="color:var(--text2); line-height: 1.5;">Yakin ingin menghapus data ini?</p>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Batal</button>
+      <button class="btn btn-danger" id="confirm-ok">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="script.js"></script>
+
+</body>
+</html>
