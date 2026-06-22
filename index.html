@@ -10,8 +10,246 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<link rel="stylesheet" href="style.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0F2B5B;--navy2:#1B3E7B;--navy3:#2E5FA3;--navy4:#4A7CC7;
+  --bg:#F0F4FA;--card:#FFFFFF;--border:#DDE4F0;
+  --text:#0D1B2E;--text2:#4A5568;--text3:#8896A8;
+  --green:#1A8C4E;--green-bg:#EBF7F1;
+  --red:#C0392B;--red-bg:#FDECEA;
+  --yellow:#B7791F;--yellow-bg:#FEF3CD;
+  --font:'Plus Jakarta Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+/* Menambahkan overflow-y: scroll agar layout tidak bergeser kiri-kanan saat ganti tab */
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow-y:scroll}
 
+/* ===SCROLLBAR=== */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#CBD5E0;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#A0AEC0}
+
+/* ===LOGIN=== */
+#login-wrap{position:fixed;inset:0;background:linear-gradient(135deg,#0F2B5B 0%,#1B3E7B 50%,#2E5FA3 100%);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+#login-wrap.hide{opacity:0;pointer-events:none}
+.login-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.25)}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-brand .logo-ring{width:56px;height:56px;background:var(--navy);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+.login-brand .logo-ring i{font-size:28px;color:#fff}
+.login-brand h1{font-size:18px;font-weight:800;color:var(--navy);letter-spacing:-.3px}
+.login-brand p{font-size:12px;color:var(--text2);margin-top:4px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase}
+.field-icon{position:relative}
+.field-icon i.prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.field-icon input{width:100%;padding:10px 40px 10px 38px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);outline:none;transition:.15s;background:#fff;color:var(--text)}
+.field-icon input:focus{border-color:var(--navy2);box-shadow:0 0 0 3px rgba(27,62,123,.1)}
+.field-icon .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);background:none;border:none;padding:2px;display:flex}
+.btn-login{width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font);margin-top:8px;letter-spacing:.03em}
+.btn-login:hover{background:var(--navy2)}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;display:none;text-align:center;padding:8px;background:var(--red-bg);border-radius:8px}
+
+/* ===APP SHELL=== */
+#app{display:none;min-height:100vh}
+#app.show{display:flex}
+.sidebar{width:250px;min-height:100vh;background:var(--navy);position:fixed;left:0;top:0;bottom:0;z-index:200;display:flex;flex-direction:column;transition:.3s}
+.sb-logo{padding:18px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1); height: 62px;}
+.sb-logo i{font-size:24px;color:#fff}
+.sb-logo span{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.sb-nav{padding:16px 12px;flex:1;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:.12s;margin-bottom:4px;color:rgba(255,255,255,.65);font-size:13.5px;font-weight:500;border-left:3px solid transparent}
+.nav-item i{font-size:18px;min-width:20px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#7EB3FF;font-weight:600}
+.sb-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1); font-size:11px; color:rgba(255,255,255,.5); text-align:center;}
+.topbar{position:fixed;top:0;left:250px;right:0;height:62px;background:#fff;border-bottom:1px solid var(--border);z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.topbar-title{font-size:18px;font-weight:700;color:var(--navy);letter-spacing:-.2px}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.user-pill{display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+.user-pill i{font-size:20px; color:var(--navy2)}
+.user-pill .uname{font-size:13px;font-weight:700;color:var(--text); line-height: 1.2}
+.user-pill .urole{font-size:11px;color:var(--text2); line-height: 1.2}
+.btn-out{display:flex;align-items:center;gap:6px;padding:8px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--font);font-weight:600;transition:.12s}
+.btn-out:hover{border-color:var(--red);color:var(--red); background:var(--red-bg)}
+.main{margin-left:250px;margin-top:62px;padding:24px;min-height:calc(100vh - 62px); width: calc(100% - 250px);}
+
+/* ===PAGE=== */
+.page{display:none; animation: fadeIn 0.2s ease-in-out;}
+.page.active{display:block}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap: 16px; flex-wrap:wrap;}
+.ph h2{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.3px}
+.ph-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===CARDS & GRID === */
+/* min-width: 0 mencegah element meluap ke luar layar di dalam Grid Flexbox */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px; min-width:0; box-shadow: 0 2px 8px rgba(0,0,0,.02)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;letter-spacing:-.1px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
+
+/* AHP grid seimbang */
+.ahp-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;margin-bottom:16px}
+.ahp-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+
+.metric-card .mic-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.metric-card .mic-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:6px}
+.metric-card .mic-val{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px; line-height: 1}
+.metric-card .mic-sub{font-size:11.5px;color:var(--text3);margin-top:6px}
+
+/* ===BTNS=== */
+.btn{display:inline-flex;align-items:center;justify-content: center; gap:6px; padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:.12s;white-space:nowrap}
+.btn i{font-size:16px}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy2)}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{border-color:var(--navy);color:var(--navy)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.88}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{opacity:.88}
+.btn-sm{padding:6px 12px;font-size:12.5px}.btn-sm i{font-size:15px}
+.btn-xs{padding:5px 10px;font-size:11.5px; border-radius:6px;}.btn-xs i{font-size:14px}
+
+/* ===BADGES=== */
+.badge{display:inline-block;border-radius:20px;font-size:11px;padding:3px 10px;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge-navy{background:rgba(15,43,91,.1);color:var(--navy)}
+.badge-gray{background:#EDF2F7;color:#4A5568}
+
+/* ===TABLE=== */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);max-width:100%}
+table{width:100%;border-collapse:collapse;font-size:12.5px; min-width: 600px;}
+thead tr{background:#F7FAFF}
+th{padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+th:first-child, th:nth-child(2) { text-align:left; } /* Keep Kode and Nama left aligned */
+td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#F7FAFF}
+tr.row-best td{background:rgba(26,140,78,.04)}
+tr.row-worst td{background:rgba(192,57,43,.04)}
+.tbl-num{font-family:var(--mono);font-size:12.5px;text-align:right}
+.col-sup-name{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===FORMS=== */
+.fgrp{margin-bottom:16px}
+.fgrp label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);margin-bottom:6px}
+.fgrp input,.fgrp select,.fgrp textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;transition:.15s;color:var(--text);background:#fff}
+.fgrp input:focus,.fgrp select:focus,.fgrp textarea:focus{border-color:var(--navy2);box-shadow:0 0 0 3px rgba(27,62,123,.08)}
+.fgrp .ferr{color:var(--red);font-size:11px;margin-top:6px;display:none; font-weight: 500;}
+.frow{display:grid;gap:16px}
+.frow-2{grid-template-columns:1fr 1fr}
+.frow-3{grid-template-columns:1fr 1fr 1fr}
+.search-box{position:relative}
+.search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none; font-size:16px;}
+.search-box input{padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;width:240px;background:#fff;transition:.15s}
+.search-box input:focus{border-color:var(--navy2); box-shadow:0 0 0 3px rgba(27,62,123,.08)}
+
+/* ===MODAL=== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.open{opacity:1;pointer-events:all; backdrop-filter: blur(2px);}
+.modal-box{background:#fff;border-radius:16px;padding:28px;width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;transform:translateY(15px);transition:transform .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.15)}
+.modal-bg.open .modal-box{transform:translateY(0)}
+.modal-box.wide{width:700px}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-hd h3{font-size:18px;font-weight:700;color:var(--navy)}
+.modal-close{cursor:pointer;color:var(--text3);padding:6px;border-radius:8px;display:flex;background:none;border:none; transition: .15s}.modal-close:hover{background:var(--bg);color:var(--red)}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ===AHP & TLF TABS=== */
+.tab-bar{display:flex;gap:4px;background:#E2E8F0;border-radius:10px;padding:4px;margin-bottom:20px;}
+.tab-btn{flex:1;padding:10px 12px;border:none;background:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s;font-family:var(--font);text-align:center;}
+.tab-btn:hover:not(.active){color:var(--navy)}
+.tab-btn.active{background:#fff;color:var(--navy);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.tab-pane{display:none; animation: fadeIn 0.2s ease-in-out;}
+.tab-pane.active{display:block}
+
+/* ===MATRIX TABLE=== */
+.mtx{border-collapse:collapse;table-layout:fixed; min-width: auto;}
+.mtx th,.mtx td{padding:8px 10px;border:1px solid var(--border);font-size:12.5px;text-align:center;width:72px}
+.mtx thead th{background:#F7FAFF;font-weight:700;font-size:11px}
+.mtx .rlabel{font-weight:700;background:#F7FAFF;text-align:left;width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtx .pos{background:rgba(74,124,199,.08)}
+.mtx .neg{background:rgba(113,128,150,.06)}
+.mtx .diag{background:#EEF4FF;font-weight:700}
+.card-matrix{overflow:hidden}
+
+/* ===PROGRESS=== */
+.prog-bar{background:var(--border);border-radius:20px;height:8px;overflow:hidden}
+.prog-fill{background:var(--navy);height:100%;border-radius:20px}
+
+/* ===ALERTS=== */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:flex-start;gap:12px;margin-bottom:16px; line-height: 1.5;}
+.alert i{font-size:18px;flex-shrink:0;margin-top:0px}
+.alert-info{background:rgba(15,43,91,.05);color:var(--navy2);border:1px solid rgba(15,43,91,.15)}
+.alert-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(26,140,78,.2)}
+.alert-warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(183,121,31,.25)}
+
+/* ===TOAST=== */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:14px 20px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(60px);opacity:0;transition:.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ===EDITABLE CELL=== */
+.editable-num{width:100%; max-width:100px; padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;font-family:var(--mono);text-align:right;background:#fff;color:var(--text); transition: .15s;}
+.editable-num:focus{border-color:var(--navy2);outline:none; box-shadow:0 0 0 3px rgba(27,62,123,.1)}
+.cell-warn{background:rgba(192,57,43,.06)!important}
+
+/* ===CHIP=== */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.chip-navy{background:rgba(15,43,91,.1);color:var(--navy)}
+.chip-green{background:var(--green-bg);color:var(--green)}
+.chip-red{background:var(--red-bg);color:var(--red)}
+.chip-gray{background:#EDF2F7;color:#4A5568}
+
+/* ===STAT ROW=== */
+.stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-row .sk{color:var(--text2); font-weight:500;}.stat-row .sv{font-weight:700;font-family:var(--mono)}
+
+/* ===DASHBOARD SUMMARY=== */
+.summary-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.summary-row:last-child{border-bottom:none}
+.summary-row .sr-rank{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.summary-row .sr-name{flex:1;font-size:13.5px;font-weight:600}
+.summary-row .sr-val{font-size:13px;font-family:var(--mono);color:var(--text2)}
+
+/* ================================================================ */
+/* === CLASS BARU UNTUK MENCEGAH CHART OVERLAPPING ================ */
+/* ================================================================ */
+.chart-anti-overlap {
+  position: relative;
+  width: 100%;
+  height: 300px; /* Diperbesar agar chart lebih luas dan lega */
+  display: block;
+}
+
+/* ===PRINT=== */
+@media print{
+  body{ background: #ffffff !important; color: #000 !important; overflow: visible !important; }
+  .sidebar, .topbar, .ph-actions, .btn, .tab-bar, .search-box { display:none !important; }
+  .main { margin: 0 !important; padding: 0 !important; width: 100% !important; overflow: visible !important; }
+  
+  /* Sembunyikan halaman yang tidak aktif */
+  .page { display: none !important; }
+  .page.active { display: block !important; }
+
+  /* Membuat semua tab pane di dalam halaman yang aktif untuk dicetak berurutan selayaknya report */
+  .page.active .tab-pane { display: block !important; page-break-inside: auto; margin-bottom: 30px; opacity: 1 !important; }
+  
+  /* Reset Grid agar jadi tumpukan ke bawah, atau pastikan tabel bisa break */
+  .grid-2, .grid-3, .grid-4, .ahp-grid-2, .ahp-grid-3 { display: flex !important; flex-direction: column !important; gap: 20px !important; }
+  
+  .card { border: 1px solid #ddd !important; box-shadow: none !important; margin-bottom: 20px !important; page-break-inside: avoid; min-width: 100% !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
+  
+  /* Perbaikan tampilan canvas saat dicetak */
+  .chart-anti-overlap { height: auto !important; } /* Supaya saat diprint menyesuaikan */
+  canvas { max-width: 100% !important; height: auto !important; page-break-inside: avoid; }
+}
+</style>
 </head>
 <body>
 
@@ -87,7 +325,7 @@
         <div class="card metric-card">
           <div class="mic-icon" style="background:var(--red-bg)"><i class="ti ti-trending-up" style="color:var(--red);font-size:20px"></i></div>
           <div class="mic-lbl">Kenaikan Harga</div>
-          <div class="mic-val" style="color:var(--red)">+36,63%</div>
+          <div class="mic-val" style="color:var(--red)">+5%</div>
           <div class="mic-sub">vs supplier sebelumnya</div>
         </div>
         <div class="card metric-card">
@@ -288,7 +526,7 @@
           <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Nilai diambil dari rata-rata riwayat pemesanan. Sel merah = melebihi toleransi. Anda dapat mengedit nilai A1-A6 secara manual di sini.</span></div>
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">A1 Reject (%)</th><th style="text-align:right">A2 Harga (Rp/m³)</th><th style="text-align:right">A3 Terlambat (hr)</th><th style="text-align:right">A4 Volume (m³)</th><th style="text-align:right">A5 Pelayanan</th><th style="text-align:right">A6 Konsistensi</th></tr></thead>
+              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">A1 Reject (m³)</th><th style="text-align:right">A2 Harga (Rp/m³)</th><th style="text-align:right">A3 Terlambat (hr)</th><th style="text-align:right">A4 Volume (m³)</th><th style="text-align:right">A5 Pelayanan</th><th style="text-align:right">A6 Konsistensi</th></tr></thead>
               <tbody id="tlf-data-body"></tbody>
             </table>
           </div>
@@ -364,7 +602,7 @@
     <div class="frow frow-3">
       <div class="fgrp"><label>Qty Order (m³)</label><input type="number" id="mr-qty-order" placeholder="100"><div class="ferr" id="e-mr-qty">Wajib diisi.</div></div>
       <div class="fgrp"><label>Qty Datang (m³)</label><input type="number" id="mr-qty-datang" placeholder="100"></div>
-      <div class="fgrp"><label>Reject (%)</label><input type="number" id="mr-reject" placeholder="0" step="0.01"></div>
+      <div class="fgrp"><label>Reject (m³)</label><input type="number" id="mr-reject" placeholder="0" step="0.01"></div>
     </div>
     <div class="frow frow-2">
       <div class="fgrp"><label>Harga (Rp/m³)</label><input type="number" id="mr-harga" placeholder="185000"></div>
@@ -389,7 +627,956 @@
 </div>
 
 <div id="toast"></div>
-<script src="script.js"></script>
 
+<script>
+// ================================================================
+// DATA DEFAULT (sesuai skripsi)
+// ================================================================
+const DEF_SUPPLIERS = [
+  {kode:'S1',nama:'Bumi Sedimen',angkutan:'',material:'Batu Skrining',harga:185000,status:'Aktif'},
+  {kode:'S2',nama:'AAIJ',angkutan:'Tobesmala',material:'Batu Skrining',harga:235000,status:'Aktif'},
+  {kode:'S3',nama:'MSJ',angkutan:'Tobesmala',material:'Batu Skrining',harga:235000,status:'Aktif'},
+  {kode:'S4',nama:'Aldo',angkutan:'Saputra Inacon',material:'Batu Skrining',harga:210000,status:'Aktif'},
+  {kode:'S5',nama:'Waskita',angkutan:'Saputra Inacon',material:'Batu Skrining',harga:210000,status:'Aktif'},
+  {kode:'S6',nama:'Sumber Gunung Maju',angkutan:'',material:'Batu Skrining',harga:250000,status:'Aktif'},
+  {kode:'S7',nama:'Sumber Jaya Mineral Indo',angkutan:'',material:'Batu Skrining',harga:250000,status:'Aktif'},
+  {kode:'S8',nama:'Gandasari Alfa Granitama',angkutan:'',material:'Batu Skrining',harga:250000,status:'Aktif'},
+  {kode:'S9',nama:'Inaran Berkah Abadi',angkutan:'',material:'Batu Skrining',harga:180000,status:'Aktif'},
+  {kode:'S10',nama:'DELIMAS',angkutan:'Nayottama Putra Pratama',material:'Batu Skrining',harga:215000,status:'Aktif'},
+];
+
+// Riwayat pemesanan per supplier (total 6 bulan)
+const DEF_RIWAYAT = [
+  {id:1,no:'ORD-001',bulan:'2025-09',kode:'S1',material:'Batu Skrining',qtyOrder:113,qtyDatang:113,reject:0,harga:185000,terlambat:0},
+  {id:2,no:'ORD-002',bulan:'2025-09',kode:'S2',material:'Batu Skrining',qtyOrder:70,qtyDatang:70,reject:0,harga:235000,terlambat:0},
+  {id:3,no:'ORD-003',bulan:'2025-09',kode:'S3',material:'Batu Skrining',qtyOrder:64,qtyDatang:64,reject:0,harga:235000,terlambat:0},
+  {id:4,no:'ORD-004',bulan:'2025-09',kode:'S4',material:'Batu Skrining',qtyOrder:180,qtyDatang:180,reject:8.28,harga:210000,terlambat:0},
+  {id:5,no:'ORD-005',bulan:'2025-09',kode:'S5',material:'Batu Skrining',qtyOrder:86,qtyDatang:86,reject:0,harga:210000,terlambat:0},
+  {id:6,no:'ORD-006',bulan:'2025-09',kode:'S6',material:'Batu Skrining',qtyOrder:117,qtyDatang:117,reject:0,harga:250000,terlambat:1},
+  {id:7,no:'ORD-007',bulan:'2025-09',kode:'S7',material:'Batu Skrining',qtyOrder:184,qtyDatang:184,reject:9.94,harga:250000,terlambat:1},
+  {id:8,no:'ORD-008',bulan:'2025-09',kode:'S8',material:'Batu Skrining',qtyOrder:124,qtyDatang:124,reject:0,harga:250000,terlambat:1},
+  {id:9,no:'ORD-009',bulan:'2025-09',kode:'S9',material:'Batu Skrining',qtyOrder:83,qtyDatang:83,reject:0,harga:180000,terlambat:1},
+  {id:10,no:'ORD-010',bulan:'2025-09',kode:'S10',material:'Batu Skrining',qtyOrder:178,qtyDatang:178,reject:7.48,harga:215000,terlambat:0},
+];
+
+// Nilai pelayanan dan konsistensi kualitas dari kuesioner
+const DEF_SRF = {
+  S1:{layanan:0.91,konsistensi:0.92}, S2:{layanan:0.93,konsistensi:0.90}, S3:{layanan:0.89,konsistensi:0.91},
+  S4:{layanan:0.63,konsistensi:0.61}, S5:{layanan:0.58,konsistensi:0.89}, S6:{layanan:0.42,konsistensi:0.90},
+  S7:{layanan:0.38,konsistensi:0.43}, S8:{layanan:0.45,konsistensi:0.88}, S9:{layanan:0.62,konsistensi:0.91},
+  S10:{layanan:0.59,konsistensi:0.64},
+};
+
+// AHP: nilai rata-rata kuesioner & tingkat kepentingan
+const DEF_AHP_KRIT = [
+  {kode:'A1',nama:'Kualitas Material',nilai:43.67,tk:1}, {kode:'A2',nama:'Harga',nilai:29.67,tk:6},
+  {kode:'A3',nama:'Proses Pengiriman',nilai:32.67,tk:5}, {kode:'A4',nama:'Ketersediaan Stok',nilai:34.67,tk:3},
+  {kode:'A5',nama:'Pelayanan',nilai:34.00,tk:4}, {kode:'A6',nama:'Konsistensi Kualitas',nilai:37.00,tk:2},
+];
+
+// Konstanta kerugian k
+const DEF_K_STB = [
+  {kode:'A1',nama:'Kualitas Material',A:85572.74,delta:6}, {kode:'A2',nama:'Harga',A:18470100,delta:250000},
+  {kode:'A3',nama:'Proses Pengiriman',A:600000,delta:2}, {kode:'A4',nama:'Ketersediaan Stok',A:5040000,delta:570},
+];
+const DEF_K_LTB = [
+  {kode:'A5',nama:'Pelayanan',A:150000,delta:0.205}, {kode:'A6',nama:'Konsistensi Kualitas',A:333000,delta:0.174},
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let suppliers, riwayat, ahpKrit, kSTB, kLTB, srf;
+let editSupIdx = null, editRiwIdx = null;
+let chartAhpDash=null, chartTlfDash=null, chartAhpMain=null, chartTlfMain=null;
+let ahpResult = null, tlfResult = null; 
+
+function loadState(){
+  suppliers = JSON.parse(sessionStorage.getItem('v2_suppliers')||'null') || JSON.parse(JSON.stringify(DEF_SUPPLIERS));
+  riwayat   = JSON.parse(sessionStorage.getItem('v2_riwayat')||'null')   || JSON.parse(JSON.stringify(DEF_RIWAYAT));
+  ahpKrit   = JSON.parse(sessionStorage.getItem('v2_ahpKrit')||'null')   || JSON.parse(JSON.stringify(DEF_AHP_KRIT));
+  kSTB      = JSON.parse(sessionStorage.getItem('v2_kSTB')||'null')      || JSON.parse(JSON.stringify(DEF_K_STB));
+  kLTB      = JSON.parse(sessionStorage.getItem('v2_kLTB')||'null')      || JSON.parse(JSON.stringify(DEF_K_LTB));
+  srf       = JSON.parse(sessionStorage.getItem('v2_srf')||'null')       || JSON.parse(JSON.stringify(DEF_SRF));
+}
+function save(){
+  sessionStorage.setItem('v2_suppliers',JSON.stringify(suppliers));
+  sessionStorage.setItem('v2_riwayat',JSON.stringify(riwayat));
+  sessionStorage.setItem('v2_ahpKrit',JSON.stringify(ahpKrit));
+  sessionStorage.setItem('v2_kSTB',JSON.stringify(kSTB));
+  sessionStorage.setItem('v2_kLTB',JSON.stringify(kLTB));
+  sessionStorage.setItem('v2_srf',JSON.stringify(srf));
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+const USERS={admin:{pass:'admin123',role:'Administrator'},purchasing:{pass:'purchasing123',role:'Purchasing'},qc:{pass:'qc123',role:'Quality Control'}};
+function toggleEye(){
+  const inp=document.getElementById('li-pass'),ic=document.getElementById('eye-ic');
+  if(inp.type==='password'){inp.type='text';ic.className='ti ti-eye-off';}
+  else{inp.type='password';ic.className='ti ti-eye';}
+}
+function doLogin(){
+  const u=document.getElementById('li-user').value.trim();
+  const p=document.getElementById('li-pass').value;
+  const err=document.getElementById('li-err');
+  if(USERS[u]&&USERS[u].pass===p){
+    err.style.display='none';
+    document.getElementById('login-wrap').classList.add('hide');
+    document.getElementById('app').classList.add('show');
+    document.getElementById('tp-name').textContent=u.charAt(0).toUpperCase()+u.slice(1);
+    document.getElementById('tp-role').textContent=USERS[u].role;
+    initApp();
+  } else {err.style.display='block';}
+}
+function doLogout(){
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-wrap').classList.remove('hide');
+  document.getElementById('li-user').value='';
+  document.getElementById('li-pass').value='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('login-wrap').classList.contains('hide'))doLogin();});
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+const PAGE_NAMES={dashboard:'Dashboard',supplier:'Data Supplier',riwayat:'Riwayat Pemesanan',ahp:'Perhitungan AHP',tlf:'Perhitungan Kerugian (TLF)'};
+function navigate(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  document.querySelector('[data-pg="'+pg+'"]').classList.add('active');
+  document.getElementById('topbar-title').textContent=PAGE_NAMES[pg];
+  if(pg==='dashboard') renderDashboard();
+  if(pg==='supplier') renderSupplier();
+  if(pg==='riwayat') renderRiwayat();
+  if(pg==='ahp') renderAHP();
+  if(pg==='tlf') renderTLF();
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.pg)));
+
+function initApp(){
+  loadState();
+  ahpResult = computeAHP();
+  tlfResult = computeTLF();
+  navigate('dashboard');
+}
+
+// ================================================================
+// FORMAT HELPERS
+// ================================================================
+function fmtRp(n){return Math.round(n).toLocaleString('id-ID');}
+function fmtDec(n,d=2){return n.toFixed(d).replace('.',',');}
+function fmtNum(n){
+  if(!isFinite(n)) return '—';
+  if(n>=1000) return Math.round(n).toLocaleString('id-ID');
+  return n.toFixed(n<0.01?6:2).replace('.',',');
+}
+
+// ================================================================
+// AHP & TLF COMPUTATION
+// ================================================================
+function computeAHP(){
+  const krit = [...ahpKrit].sort((a,b)=>a.tk-b.tk);
+  const n = krit.length; 
+  
+  const selisih = [];
+  for(let i=0;i<n;i++){
+    selisih.push([]);
+    for(let j=0;j<n;j++) selisih[i].push(krit[i].tk - krit[j].tk);
+  }
+  
+  // Konversi selisih ke skala AHP: 0→1, -1→2, -2→3, -3→4, -4→5, -5→6
+  // Nilai positif = reciprocal: selisih +s → 1/(s+1)
+  function toAHP(s){
+    if(s===0) return 1;
+    if(s<0) return Math.abs(s)+1; 
+    return 1/(s+1);                
+  }
+  const matriks = selisih.map(row=>row.map(toAHP));
+  
+  // Jumlah kolom (tanpa rounding agar akurat)
+  const colSum = Array(n).fill(0);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) colSum[j]+=matriks[i][j];
+  
+  // Helper rounding
+  const r2 = v => Math.round(v * 100) / 100;
+  const r3 = v => Math.round(v * 1000) / 1000;
+  
+  // Normalisasi: bulatkan ke 2 desimal sesuai cara perhitungan di skripsi
+  const normMat = matriks.map((row,i)=>row.map((v,j)=>r2(v/colSum[j])));
+  
+  // Jumlah baris dari normalisasi
+  const rowSum = normMat.map(row=>r2(row.reduce((a,b)=>a+b,0)));
+  
+  // Bobot = rowSum / n, bulatkan ke 2 desimal
+  const bobot = rowSum.map(s=>r2(s/n));
+  
+  // Weighted Sum Vector: setiap elemen normMat x bobot_kolom dijumlahkan per baris
+  // Gunakan matriks asli (bukan normMat) × bobot sesuai cara skripsi
+  const wsv = Array(n).fill(0);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) wsv[i] += r2(matriks[i][j] * bobot[j]);
+  const wsvRnd = wsv.map(v=>r2(v));
+  
+  // Nilai indeks = wsv / bobot, bulatkan ke 2 desimal
+  const nilaiIndeks = wsvRnd.map((w,i)=>r2(w/bobot[i]));
+  
+  // Lambda maks = rata-rata nilai indeks, bulatkan ke 2 desimal
+  const lambdaMaks = r2(nilaiIndeks.reduce((a,b)=>a+b,0)/n);
+  
+  // CI = (lambda - n) / (n - 1), bulatkan ke 3 desimal
+  const CI = r3((lambdaMaks - n)/(n-1));
+  
+  // CR = CI / RI(n=6) = CI / 1.24, bulatkan ke 2 desimal
+  const CR = r2(CI/1.24); 
+  
+  return {krit, selisih, matriks, colSum, normMat, rowSum, bobot, wsv:wsvRnd, nilaiIndeks, lambdaMaks, CI, CR, n};
+}
+
+let _computeTLF = function(){
+  const ahp=ahpResult||computeAHP();
+  const kStbCalc=kSTB.map(k=>({...k,k:k.A/(k.delta*k.delta)}));
+  const kLtbCalc=kLTB.map(k=>({...k,k:k.A*(k.delta*k.delta)}));
+  const data=suppliers.map(s=>{
+    const orders=riwayat.filter(r=>r.kode===s.kode);
+    const nOrd=orders.length||1;
+    const srfS=srf[s.kode]||{layanan:0.5,konsistensi:0.5};
+    const a1=srfS.ovr_a1!=null?srfS.ovr_a1:orders.reduce((a,r)=>a+(r.qtyDatang>0?r.reject/r.qtyDatang:0),0)/nOrd;
+    const a2=srfS.ovr_a2!=null?srfS.ovr_a2:(orders.length>0?orders.reduce((a,r)=>a+r.harga,0)/nOrd:s.harga);
+    const a3=srfS.ovr_a3!=null?srfS.ovr_a3:orders.reduce((a,r)=>a+r.terlambat,0)/nOrd;
+    const a4=srfS.ovr_a4!=null?srfS.ovr_a4:orders.reduce((a,r)=>a+r.qtyOrder,0)/nOrd;
+    const a5=srfS.layanan;
+    const a6=srfS.konsistensi;
+    return{kode:s.kode,nama:s.nama,a1,a2,a3,a4,a5,a6};
+  });
+  const results=data.map(d=>{
+    const ly1=kStbCalc[0].k*d.a1*d.a1;
+    const ly2=kStbCalc[1].k*d.a2*d.a2;
+    const ly3=kStbCalc[2].k*d.a3*d.a3;
+    const ly4=kStbCalc[3].k*d.a4*d.a4;
+    const ly5=d.a5>0?kLtbCalc[0].k/(d.a5*d.a5):Infinity;
+    const ly6=d.a6>0?kLtbCalc[1].k/(d.a6*d.a6):Infinity;
+    return{...d,ly1,ly2,ly3,ly4,ly5,ly6};
+  });
+  const bobotMap={};
+  ahp.krit.forEach((k,i)=>bobotMap[k.kode]=ahp.bobot[i]);
+  const totals=results.map(r=>{
+    const total=bobotMap['A1']*r.ly1+bobotMap['A2']*r.ly2+bobotMap['A3']*r.ly3+
+                bobotMap['A4']*r.ly4+bobotMap['A5']*r.ly5+bobotMap['A6']*r.ly6;
+    return{...r,total,
+      wly1:bobotMap['A1']*r.ly1,wly2:bobotMap['A2']*r.ly2,wly3:bobotMap['A3']*r.ly3,
+      wly4:bobotMap['A4']*r.ly4,wly5:bobotMap['A5']*r.ly5,wly6:bobotMap['A6']*r.ly6,bobotMap};
+  });
+  const ranked=[...totals].sort((a,b)=>a.total-b.total);
+  return{kStbCalc,kLtbCalc,data,results,ranked,bobotMap};
+};
+function computeTLF(){ return _computeTLF(); }
+
+// ================================================================
+// DASHBOARD
+// ================================================================
+function renderDashboard(){
+  ahpResult = computeAHP();
+  tlfResult = computeTLF();
+  
+  document.getElementById('d-total-sup').textContent = suppliers.length;
+  document.getElementById('d-total-order').textContent = riwayat.length;
+  
+  const best = tlfResult.ranked[0];
+  if(best){
+    document.getElementById('d-best-sup').textContent = best.kode+' — '+best.nama;
+    document.getElementById('d-best-loss').textContent = 'Total kerugian: Rp '+fmtRp(best.total);
+  }
+  
+  const rl = document.getElementById('d-ranking-list');
+  rl.innerHTML='';
+  const rankColors=['#1A8C4E','#2E5FA3','#4A7CC7','#718096','#718096','#718096','#718096','#A0AEC0','#C0392B','#C0392B'];
+  
+  // Batasi hanya 10 supplier teratas untuk list dan grafik
+  const top10 = tlfResult.ranked.slice(0, 10);
+  
+  top10.forEach((r,i)=>{
+    const isB=i===0,isW=(r.kode === tlfResult.ranked[tlfResult.ranked.length-1].kode);
+    rl.innerHTML+=`<div class="summary-row">
+      <div class="sr-rank" style="background:${rankColors[i]||'#A0AEC0'};color:#fff">${i+1}</div>
+      <div class="sr-name">${r.kode} — ${r.nama}</div>
+      <div class="sr-val">Rp ${fmtRp(r.total)}</div>
+      ${isB?'<span class="badge badge-green">Terbaik</span>':isW?'<span class="badge badge-red">Terburuk</span>':''}
+    </div>`;
+  });
+  
+  // Tombol lihat semua untuk ranking list
+  if(tlfResult.ranked.length > 10){
+    rl.innerHTML += `<button class="btn btn-outline" style="width:100%; margin-top:16px; justify-content:center;" onclick="navigate('tlf'); tlfTab(3)">Lihat Semua Supplier</button>`;
+  }
+  
+  if(chartAhpDash) chartAhpDash.destroy();
+  chartAhpDash=new Chart(document.getElementById('chart-ahp-dash').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:ahpResult.krit.map(k=>k.kode+' '+k.nama),
+      datasets:[{data:ahpResult.bobot.map(b=>parseFloat((b*100).toFixed(1))),
+        backgroundColor:['#0F2B5B','#1B3E7B','#2E5FA3','#4A7CC7','#6D9ED8','#9DC2E8'],
+        borderWidth:2,borderColor:'#fff'}]
+    },
+    plugins: [ChartDataLabels],
+    options:{
+      responsive:true, 
+      maintainAspectRatio: false,
+      layout: { padding: 0 }, 
+      cutout: '40%', // Ketebalan cincin dibuat pas agar mekar sempurna
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{font:{size:11},boxWidth:12, padding:15} // Legend di bawah
+        },
+        datalabels: {
+          color: '#ffffff',
+          font: { weight: 'bold', size: 12 },
+          formatter: (value) => value + '%'
+        }
+      }
+    }
+  });
+  
+  if(chartTlfDash) chartTlfDash.destroy();
+  // Gunakan data top10 untuk grafik bar chart
+  const bgc=top10.map((r,i)=>i===0?'#1A8C4E':i===top10.length-1?'#C0392B':'#2E5FA3');
+  chartTlfDash=new Chart(document.getElementById('chart-tlf-dash').getContext('2d'),{
+    type:'bar',
+    data:{labels:top10.map(r=>r.kode),datasets:[{label:'Total Kerugian (Rp)',data:top10.map(r=>r.total),backgroundColor:bgc,borderRadius:5}]},
+    options:{responsive:true, maintainAspectRatio: false, plugins:{legend:{display:false}, datalabels:{display:false}},
+      scales:{y:{ticks:{callback:v=>'Rp '+fmtRp(v)},beginAtZero:true}}}
+  });
+  
+  // Tombol lihat semua untuk grafik TLF
+  const tlfAction = document.getElementById('d-tlf-action');
+  if(tlfAction) {
+    if(tlfResult.ranked.length > 10){
+      tlfAction.innerHTML = `<button class="btn btn-outline" style="width:100%; margin-top:16px; justify-content:center;" onclick="navigate('tlf'); tlfTab(3)">Lihat Grafik Penuh Supplier)</button>`;
+    } else {
+      tlfAction.innerHTML = '';
+    }
+  }
+}
+
+// ================================================================
+// SUPPLIER CRUD
+// ================================================================
+function renderSupplier(){
+  const q=(document.getElementById('sup-search').value||'').toLowerCase();
+  const tb=document.getElementById('sup-tbody');
+  tb.innerHTML='';
+  suppliers.filter(s=>s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q))
+    .forEach((s,i)=>{
+      const realIdx=suppliers.indexOf(s);
+      tb.innerHTML+=`<tr>
+        <td><span class="chip chip-navy">${s.kode}</span></td>
+        <td style="font-weight:600">${s.nama}</td>
+        <td>${s.angkutan||'<span style="color:var(--text3)">—</span>'}</td>
+        <td>${s.material||'Batu Skrining'}</td>
+        <td class="tbl-num">Rp ${s.harga.toLocaleString('id-ID')}</td>
+        <td><span class="badge ${s.status==='Aktif'?'badge-green':'badge-gray'}">${s.status}</span></td>
+        <td>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-outline btn-xs" onclick="openSupModal(${realIdx})"><i class="ti ti-edit"></i></button>
+            <button class="btn btn-danger btn-xs" onclick="confirmDel('supplier',${realIdx})"><i class="ti ti-trash"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    });
+}
+
+function openSupModal(idx=null){
+  editSupIdx=idx;
+  const s=idx!==null?suppliers[idx]:null;
+  document.getElementById('msup-title').textContent=idx!==null?'Edit Supplier':'Tambah Supplier';
+  document.getElementById('ms-kode').value=s?s.kode:'';
+  document.getElementById('ms-nama').value=s?s.nama:'';
+  document.getElementById('ms-angkutan').value=s?s.angkutan:'';
+  document.getElementById('ms-material').value=s?(s.material||'Batu Skrining'):'Batu Skrining';
+  document.getElementById('ms-harga').value=s?s.harga:'';
+  document.getElementById('ms-status').value=s?s.status:'Aktif';
+  ['ms-kode','ms-nama','ms-harga'].forEach(id=>{const e=document.getElementById('e-'+id);if(e)e.style.display='none';});
+  openModal('modal-sup');
+}
+
+function saveSupplier(){
+  const kode=document.getElementById('ms-kode').value.trim();
+  const nama=document.getElementById('ms-nama').value.trim();
+  const harga=parseFloat(document.getElementById('ms-harga').value);
+  let ok=true;
+  if(!kode){document.getElementById('e-ms-kode').style.display='block';ok=false;}else document.getElementById('e-ms-kode').style.display='none';
+  if(!nama){document.getElementById('e-ms-nama').style.display='block';ok=false;}else document.getElementById('e-ms-nama').style.display='none';
+  if(isNaN(harga)||harga<0){document.getElementById('e-ms-harga').style.display='block';ok=false;}else document.getElementById('e-ms-harga').style.display='none';
+  if(!ok)return;
+  
+  const obj={kode,nama,angkutan:document.getElementById('ms-angkutan').value.trim(),
+    material:document.getElementById('ms-material').value.trim()||'Batu Skrining',harga,
+    status:document.getElementById('ms-status').value};
+  
+  if(editSupIdx!==null) suppliers[editSupIdx]=obj;
+  else suppliers.push(obj);
+  save(); closeModal('modal-sup'); renderSupplier();
+  showToast(editSupIdx!==null?'Data supplier diperbarui.':'Supplier baru ditambahkan.');
+  editSupIdx=null;
+}
+
+// ================================================================
+// RIWAYAT PEMESANAN
+// ================================================================
+function renderRiwayat(){
+  const tb=document.getElementById('riw-tbody');
+  tb.innerHTML='';
+  const sel=document.getElementById('mr-sup');
+  sel.innerHTML='<option value="">-- Pilih Supplier --</option>';
+  suppliers.forEach(s=>sel.innerHTML+=`<option value="${s.kode}">${s.kode} — ${s.nama}</option>`);
+  
+  if(riwayat.length===0){
+    tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text3)">Belum ada data riwayat pemesanan.</td></tr>'; return;
+  }
+  riwayat.forEach((r,i)=>{
+    const sup=suppliers.find(s=>s.kode===r.kode);
+    tb.innerHTML+=`<tr>
+      <td class="tbl-num">${r.no}</td>
+      <td>${r.bulan}</td>
+      <td><span class="chip chip-navy" style="margin-right:6px">${r.kode}</span><span class="col-sup-name" style="display:inline-block;vertical-align:middle;font-weight:600">${sup?sup.nama:r.kode}</span></td>
+      <td>${r.material}</td>
+      <td class="tbl-num">${r.qtyOrder}</td>
+      <td class="tbl-num">${r.qtyDatang}</td>
+      <td class="tbl-num ${r.reject>2?'cell-warn':''}">${r.reject}</td>
+      <td class="tbl-num">Rp ${r.harga.toLocaleString('id-ID')}</td>
+      <td class="tbl-num ${r.terlambat>2?'cell-warn':''}">${r.terlambat}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-outline btn-xs" onclick="openRiwModal(${i})"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-danger btn-xs" onclick="confirmDel('riwayat',${i})"><i class="ti ti-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+
+function openRiwModal(idx=null){
+  editRiwIdx=idx;
+  const r=idx!==null?riwayat[idx]:null;
+  document.getElementById('mriw-title').textContent=idx!==null?'Edit Order':'Tambah Order';
+  const sel=document.getElementById('mr-sup');
+  sel.innerHTML='<option value="">-- Pilih Supplier --</option>';
+  suppliers.forEach(s=>sel.innerHTML+=`<option value="${s.kode}">${s.kode} — ${s.nama}</option>`);
+  
+  document.getElementById('mr-no').value=r?r.no:'ORD-'+(riwayat.length+1).toString().padStart(3,'0');
+  document.getElementById('mr-bulan').value=r?r.bulan:'2025-09';
+  document.getElementById('mr-sup').value=r?r.kode:'';
+  document.getElementById('mr-material').value=r?(r.material||'Batu Skrining'):'Batu Skrining';
+  document.getElementById('mr-qty-order').value=r?r.qtyOrder:'';
+  document.getElementById('mr-qty-datang').value=r?r.qtyDatang:'';
+  document.getElementById('mr-reject').value=r?r.reject:0;
+  document.getElementById('mr-harga').value=r?r.harga:'';
+  document.getElementById('mr-terlambat').value=r?r.terlambat:0;
+  ['mr-no','mr-sup','mr-qty-order'].forEach(id=>{const e=document.getElementById('e-'+id);if(e)e.style.display='none';});
+  openModal('modal-riw');
+}
+
+function saveRiwayat(){
+  const no=document.getElementById('mr-no').value.trim();
+  const kode=document.getElementById('mr-sup').value;
+  const qtyO=parseFloat(document.getElementById('mr-qty-order').value);
+  let ok=true;
+  if(!no){document.getElementById('e-mr-no').style.display='block';ok=false;}else document.getElementById('e-mr-no').style.display='none';
+  if(!kode){document.getElementById('e-mr-sup').style.display='block';ok=false;}else document.getElementById('e-mr-sup').style.display='none';
+  if(isNaN(qtyO)||qtyO<0){document.getElementById('e-mr-qty').style.display='block';ok=false;}else document.getElementById('e-mr-qty').style.display='none';
+  if(!ok)return;
+  
+  const obj={
+    id: editRiwIdx!==null?riwayat[editRiwIdx].id:Date.now(),
+    no, bulan:document.getElementById('mr-bulan').value,
+    kode, material:document.getElementById('mr-material').value.trim()||'Batu Skrining',
+    qtyOrder:qtyO, qtyDatang:parseFloat(document.getElementById('mr-qty-datang').value)||qtyO,
+    reject:parseFloat(document.getElementById('mr-reject').value)||0,
+    harga:parseFloat(document.getElementById('mr-harga').value)||0,
+    terlambat:parseFloat(document.getElementById('mr-terlambat').value)||0,
+  };
+  if(editRiwIdx!==null) riwayat[editRiwIdx]=obj;
+  else riwayat.push(obj);
+  save(); closeModal('modal-riw'); renderRiwayat();
+  ahpResult=computeAHP(); tlfResult=computeTLF();
+  showToast('Data order disimpan.');
+  editRiwIdx=null;
+}
+
+// ================================================================
+// AHP RENDER
+// ================================================================
+let ahpTabIdx=0;
+function ahpTab(i){
+  ahpTabIdx=i;
+  document.querySelectorAll('.tab-pane[id^="ahp-p"]').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('#page-ahp .tab-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  renderAHPTab(i);
+}
+
+function renderAHP(){ ahpResult=computeAHP(); renderAHPTab(ahpTabIdx); }
+
+function renderAHPTab(idx){
+  ahpResult=computeAHP();
+  if(idx===0) renderAHPStep1();
+  if(idx===1) renderAHPSelisih();
+  if(idx===2) renderAHPCompare();
+  if(idx===3) renderAHPBobot();
+}
+
+function renderAHPStep1(){
+  const tb=document.getElementById('ahp-step1-tbody');
+  tb.innerHTML='';
+  const sorted=[...ahpKrit].sort((a,b)=>a.tk-b.tk);
+  sorted.forEach((k,i)=>{
+    const origIdx=ahpKrit.indexOf(ahpKrit.find(x=>x.kode===k.kode));
+    tb.innerHTML+=`<tr>
+      <td><span class="chip chip-navy">${k.kode}</span></td>
+      <td style="font-weight:600">${k.nama}</td>
+      <td style="text-align:center;"><input class="editable-num" type="number" step="0.01" value="${k.nilai.toFixed(2)}"
+        onchange="ahpKrit[${origIdx}].nilai=parseFloat(this.value)||0;save();" style="text-align:center; max-width:120px; display:inline-block;"></td>
+      <td style="text-align:center;"><span class="chip chip-navy" style="padding: 4px 12px;">${k.tk}</span></td>
+    </tr>`;
+  });
+}
+
+function hitungAHP(){
+  const sorted=[...ahpKrit].sort((a,b)=>b.nilai-a.nilai);
+  sorted.forEach((item,i)=>{
+    const orig=ahpKrit.find(x=>x.kode===item.kode);
+    if(orig) orig.tk=i+1;
+  });
+  save(); ahpResult=computeAHP();
+  renderAHPStep1(); renderAHPSelisih(); renderAHPCompare(); renderAHPBobot();
+  showToast('Perhitungan AHP diperbarui berdasarkan nilai terbaru.');
+}
+
+function resetAHP(){
+  ahpKrit=JSON.parse(JSON.stringify(DEF_AHP_KRIT));
+  save(); ahpResult=computeAHP(); renderAHP();
+  showToast('Data AHP direset ke default.');
+}
+
+function renderAHPSelisih(){
+  ahpResult=computeAHP();
+  const {krit,selisih}=ahpResult;
+  const tbl=document.getElementById('ahp-selisih');
+  tbl.innerHTML='<tr><th></th>'+krit.map(k=>'<th>'+k.kode+'</th>').join('')+'</tr>';
+  selisih.forEach((row,i)=>{
+    let r=`<tr><td class="rlabel">${krit[i].kode} — ${krit[i].nama.split(' ')[0]}</td>`;
+    row.forEach(v=>{r+=`<td class="${v>0?'pos':v<0?'neg':''}">${v}</td>`;});
+    tbl.innerHTML+=r+'</tr>';
+  });
+}
+
+function renderAHPCompare(){
+  ahpResult=computeAHP();
+  const {krit,matriks,colSum}=ahpResult;
+  const tbl=document.getElementById('ahp-compare');
+  tbl.innerHTML='<tr><th style="min-width:120px"></th>'+krit.map(k=>'<th>'+k.kode+'</th>').join('')+'</tr>';
+  matriks.forEach((row,i)=>{
+    let r=`<tr><td class="rlabel">${krit[i].kode} — ${krit[i].nama.split(' ').slice(0,2).join(' ')}</td>`;
+    row.forEach((v,j)=>{
+      let disp=i===j?'1,000':v>=1?fmtDec(v,3):'1/'+Math.round(1/v);
+      r+=`<td class="${i===j?'diag':''}">${disp}</td>`;
+    });
+    tbl.innerHTML+=r+'</tr>';
+  });
+  let sumRow='<tr><td class="rlabel" style="font-weight:700;background:#E2E8F0">Jumlah Kolom</td>';
+  colSum.forEach(s=>sumRow+=`<td style="font-weight:700;background:#E2E8F0">${fmtDec(s,3)}</td>`);
+  tbl.innerHTML+=sumRow+'</tr>';
+}
+
+function renderAHPBobot(){
+  ahpResult=computeAHP();
+  const {krit,bobot,rowSum,wsv,nilaiIndeks,lambdaMaks,CI,CR}=ahpResult;
+  
+  const tb1=document.getElementById('ahp-bobot-tbody');
+  tb1.innerHTML='';
+  krit.forEach((k,i)=>{
+    tb1.innerHTML+=`<tr>
+      <td style="font-weight:500">${k.kode} — ${k.nama}</td>
+      <td class="tbl-num" style="text-align:center">${fmtDec(rowSum[i],4)}</td>
+      <td class="tbl-num" style="font-weight:800; color:var(--navy); text-align:center">${fmtDec(bobot[i],4)}</td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="prog-bar" style="width:100px"><div class="prog-fill" style="width:${(bobot[i]*100).toFixed(1)}%"></div></div>
+        <span class="tbl-num" style="font-weight:600">${(bobot[i]*100).toFixed(1)}%</span>
+      </div></td>
+    </tr>`;
+  });
+  
+  const tb2=document.getElementById('ahp-idx-tbody');
+  tb2.innerHTML='';
+  krit.forEach((k,i)=>{
+    tb2.innerHTML+=`<tr>
+      <td style="font-weight:500"><span class="chip chip-navy" style="margin-right:6px">${k.kode}</span>${k.nama}</td>
+      <td class="tbl-num" style="text-align:center">${fmtDec(wsv[i],4)}</td>
+      <td class="tbl-num" style="font-weight:700; text-align:center">${fmtDec(nilaiIndeks[i],3)}</td>
+    </tr>`;
+  });
+  
+  document.getElementById('ahp-lambda').textContent=fmtDec(lambdaMaks,3);
+  document.getElementById('ahp-ci').textContent=fmtDec(CI,3);
+  document.getElementById('ahp-cr').textContent=fmtDec(CR,2);
+  
+  const badge=document.getElementById('ahp-cr-badge');
+  const conc=document.getElementById('ahp-conclusion');
+  if(CR<=0.1){
+    badge.innerHTML='<span class="badge badge-green" style="font-size:13px;padding:8px 16px">KONSISTEN — CR = '+fmtDec(CR,2)+' &lt; 0,10</span>';
+    conc.textContent='Nilai CR = '+fmtDec(CR,2)+' memenuhi syarat konsistensi (CR ≤ 0,10). Penilaian matriks perbandingan berpasangan dinyatakan konsisten dan dapat digunakan untuk proses evaluasi supplier.';
+  } else {
+    badge.innerHTML='<span class="badge badge-red" style="font-size:13px;padding:8px 16px">TIDAK KONSISTEN — CR = '+fmtDec(CR,2)+' &ge; 0,10</span>';
+    conc.textContent='Nilai CR = '+fmtDec(CR,2)+' melebihi batas toleransi 0,10. Perlu dilakukan revisi penilaian tingkat kepentingan kriteria.';
+  }
+  
+  if(chartAhpMain) chartAhpMain.destroy();
+  chartAhpMain=new Chart(document.getElementById('chart-ahp-main').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:krit.map(k=>k.kode+'\n'+k.nama.split(' ').slice(0,2).join(' ')),
+      datasets:[{label:'Bobot Kriteria (%)',data:bobot.map(b=>parseFloat((b*100).toFixed(2))),
+        backgroundColor:['#0F2B5B','#1B3E7B','#2E5FA3','#4A7CC7','#6D9ED8','#9DC2E8'],borderRadius:6}]
+    },
+    options:{responsive:true, maintainAspectRatio: false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'},beginAtZero:true,max:50}}}
+  });
+}
+
+// ================================================================
+// TLF RENDER
+// ================================================================
+let tlfTabIdx=0;
+function tlfTab(i){
+  tlfTabIdx=i;
+  document.querySelectorAll('.tab-pane[id^="tlf-p"]').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('#page-tlf .tab-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  renderTLFTab(i);
+}
+
+function renderTLF(){ tlfResult=computeTLF(); renderTLFTab(tlfTabIdx); }
+
+function renderTLFTab(idx){
+  ahpResult=computeAHP(); tlfResult=computeTLF();
+  if(idx===0) renderKConstants();
+  if(idx===1) renderTLFData();
+  if(idx===2) renderLY();
+  if(idx===3) renderRanking();
+}
+
+function resetTLF(){
+  kSTB=JSON.parse(JSON.stringify(DEF_K_STB));
+  kLTB=JSON.parse(JSON.stringify(DEF_K_LTB));
+  srf=JSON.parse(JSON.stringify(DEF_SRF));
+  save(); tlfResult=computeTLF(); renderTLFTab(tlfTabIdx);
+  showToast('Data TLF direset ke default.');
+}
+
+function renderKConstants(){
+  const {kStbCalc,kLtbCalc}=tlfResult;
+  const b1=document.getElementById('k-stb-body');
+  b1.innerHTML='';
+  kStbCalc.forEach((k,i)=>{
+    b1.innerHTML+=`<tr>
+      <td style="font-weight:500">${k.kode} — ${k.nama}</td>
+      <td class="tbl-num"><input class="editable-num" type="number" value="${k.A}" onchange="kSTB[${i}].A=parseFloat(this.value)||0;save();tlfResult=computeTLF();renderKConstants();"></td>
+      <td class="tbl-num"><input class="editable-num" type="number" value="${k.delta}" step="any" onchange="kSTB[${i}].delta=parseFloat(this.value)||1;save();tlfResult=computeTLF();renderKConstants();"></td>
+      <td class="tbl-num" style="font-weight:700; color:var(--navy)">${fmtNum(k.k)}</td>
+    </tr>`;
+  });
+  const b2=document.getElementById('k-ltb-body');
+  b2.innerHTML='';
+  kLtbCalc.forEach((k,i)=>{
+    b2.innerHTML+=`<tr>
+      <td style="font-weight:500">${k.kode} — ${k.nama}</td>
+      <td class="tbl-num"><input class="editable-num" type="number" value="${k.A}" onchange="kLTB[${i}].A=parseFloat(this.value)||0;save();tlfResult=computeTLF();renderKConstants();"></td>
+      <td class="tbl-num"><input class="editable-num" type="number" value="${k.delta}" step="any" onchange="kLTB[${i}].delta=parseFloat(this.value)||0.001;save();tlfResult=computeTLF();renderKConstants();"></td>
+      <td class="tbl-num" style="font-weight:700; color:var(--navy)">${fmtDec(k.k,2)}</td>
+    </tr>`;
+  });
+}
+
+const TOL_WARN={a1:0.05,a2:250000,a3:2,a4:389,a5:0.80,a6:0.90};
+function isWarn(field,val){
+  if(field==='a1') return val>TOL_WARN.a1;
+  if(field==='a2') return val>TOL_WARN.a2;
+  if(field==='a3') return val>TOL_WARN.a3;
+  if(field==='a4') return val<TOL_WARN.a4;
+  if(field==='a5') return val<TOL_WARN.a5;
+  if(field==='a6') return val<TOL_WARN.a6;
+  return false;
+}
+
+function renderTLFData(){
+  const {data}=tlfResult;
+  const tb=document.getElementById('tlf-data-body');
+  tb.innerHTML='';
+  data.forEach((d,i)=>{
+    const fields=['a1','a2','a3','a4','a5','a6'];
+    let cells=`<td><span class="chip chip-navy">${d.kode}</span></td><td class="col-sup-name" style="font-weight:600">${d.nama}</td>`;
+    fields.forEach(f=>{
+      const warn=isWarn(f,d[f]);
+      cells+=`<td class="${warn?'cell-warn':''}" style="text-align:right">
+        <input class="editable-num" type="number" step="any" value="${d[f]}" onchange="updateSRF('${d.kode}','${f}',parseFloat(this.value)||0)">
+      </td>`;
+    });
+    tb.innerHTML+=`<tr>${cells}</tr>`;
+  });
+}
+
+function updateSRF(kode, field, val){
+  if(field==='a5'){if(!srf[kode])srf[kode]={layanan:1,konsistensi:1};srf[kode].layanan=val;}
+  if(field==='a6'){if(!srf[kode])srf[kode]={layanan:1,konsistensi:1};srf[kode].konsistensi=val;}
+  if(!srf[kode])srf[kode]={layanan:1,konsistensi:1};
+  if(['a1','a2','a3','a4'].includes(field)){srf[kode]['ovr_'+field]=val;}
+  save(); tlfResult=computeTLF(); renderLY(); renderRanking();
+}
+
+function hitungTLF(){
+  tlfResult=computeTLF();
+  renderLY(); renderRanking();
+  showToast('Perhitungan TLF diperbarui.');
+}
+
+function renderLY(){
+  const{results}=tlfResult;
+  const tb=document.getElementById('ly-body');
+  tb.innerHTML='';
+  results.forEach(r=>{
+    tb.innerHTML+=`<tr>
+      <td><span class="chip chip-navy">${r.kode}</span></td>
+      <td style="font-weight:600">${r.nama}</td>
+      <td class="tbl-num">${fmtDec(r.ly1,3)}</td>
+      <td class="tbl-num">${fmtRp(r.ly2)}</td>
+      <td class="tbl-num">${fmtDec(r.ly3,2)}</td>
+      <td class="tbl-num">${fmtDec(r.ly4,2)}</td>
+      <td class="tbl-num">${fmtDec(r.ly5,2)}</td>
+      <td class="tbl-num">${fmtDec(r.ly6,2)}</td>
+    </tr>`;
+  });
+}
+
+function renderRanking(){
+  const{ranked}=tlfResult;
+  const tb=document.getElementById('rank-body');
+  tb.innerHTML='';
+  ranked.forEach((r,i)=>{
+    const isB=i===0,isW=i===ranked.length-1;
+    const rowClass=isB?'row-best':isW?'row-worst':'';
+    tb.innerHTML+=`<tr class="${rowClass}">
+      <td><span class="chip ${isB?'chip-green':isW?'chip-red':'chip-gray'}">${i+1}</span></td>
+      <td><span class="chip chip-navy">${r.kode}</span></td>
+      <td class="col-sup-name" style="font-weight:600">${r.nama}</td>
+      <td class="tbl-num">${fmtDec(r.wly1,2)}</td>
+      <td class="tbl-num">${fmtRp(r.wly2)}</td>
+      <td class="tbl-num">${fmtDec(r.wly3,2)}</td>
+      <td class="tbl-num">${fmtDec(r.wly4,2)}</td>
+      <td class="tbl-num">${fmtDec(r.wly5,2)}</td>
+      <td class="tbl-num">${fmtDec(r.wly6,2)}</td>
+      <td class="tbl-num" style="font-weight:800; color:var(--navy);">Rp ${fmtRp(r.total)}</td>
+      <td>${isB?'<span class="badge badge-green">Terbaik</span>':isW?'<span class="badge badge-red">Terburuk</span>':'—'}</td>
+    </tr>`;
+  });
+  
+  if(chartTlfMain) chartTlfMain.destroy();
+  const bgc=ranked.map((_,i)=>i===0?'#1A8C4E':i===ranked.length-1?'#C0392B':'#2E5FA3');
+  chartTlfMain=new Chart(document.getElementById('chart-tlf-main').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:ranked.map(r=>r.kode+'\n'+r.nama.split(' ').slice(0,2).join(' ')),
+      datasets:[{ label:'Total Kerugian (Rp)', data:ranked.map(r=>r.total), backgroundColor:bgc, borderRadius:6 }]
+    },
+    options:{ responsive:true, maintainAspectRatio: false, plugins:{legend:{display:false}, datalabels:{display:false}, tooltip:{callbacks:{label:ctx=>'Rp '+fmtRp(ctx.raw)}}},
+      scales:{ y:{ticks:{callback:v=>'Rp '+fmtRp(v)},beginAtZero:true}, x:{ticks:{font:{size:11}}} }
+    }
+  });
+}
+
+// ================================================================
+// MODAL HELPERS
+// ================================================================
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+function confirmDel(type,idx){
+  const names={supplier:suppliers[idx]?.nama,riwayat:riwayat[idx]?.no};
+  document.getElementById('confirm-msg').textContent='Hapus "'+names[type]+'"? Tindakan ini tidak dapat dibatalkan.';
+  document.getElementById('confirm-ok').onclick=()=>{
+    if(type==='supplier'){suppliers.splice(idx,1);} else{riwayat.splice(idx,1);}
+    save(); closeModal('modal-confirm');
+    if(type==='supplier') renderSupplier(); else renderRiwayat();
+    ahpResult=computeAHP(); tlfResult=computeTLF();
+    showToast('Data berhasil dihapus.');
+  };
+  openModal('modal-confirm');
+}
+
+// ================================================================
+// IMPORT / EXPORT EXCEL & CSV
+// ================================================================
+
+function exportExcel(type, filename) {
+  let data = [];
+  if(type === 'supplier') {
+    data = suppliers.map(s => ({
+      'Kode': s.kode,
+      'Nama Supplier': s.nama,
+      'Nama Angkutan': s.angkutan,
+      'Jenis Material': s.material,
+      'Harga Material': s.harga,
+      'Status': s.status
+    }));
+  } else {
+    data = riwayat.map(r => ({
+      'No Order': r.no,
+      'Bulan': r.bulan,
+      'Kode Supplier': r.kode,
+      'Material': r.material,
+      'Qty Order': r.qtyOrder,
+      'Qty Datang': r.qtyDatang,
+      'Reject (m³)': r.reject,
+      'Harga': r.harga,
+      'Keterlambatan (hari)': r.terlambat
+    }));
+  }
+  
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Data");
+  XLSX.writeFile(wb, filename + '.xlsx');
+  showToast('File Excel berhasil diunduh.');
+}
+
+function importRiwayat(){document.getElementById('import-file').click();}
+function importSupplier(){document.getElementById('import-sup-file').click();}
+
+function handleImportFile(e, type) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = new Uint8Array(ev.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet, {raw: false});
+
+      if(json.length === 0) {
+        showToast('File kosong atau tidak valid.');
+        return;
+      }
+
+      if(type === 'supplier') processImportSupplier(json);
+      else processImportRiwayat(json);
+    } catch(err) {
+      showToast('Gagal membaca file. Pastikan formatnya benar.');
+      console.error(err);
+    }
+    e.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processImportSupplier(rows) {
+  let imported = 0;
+  for(let row of rows) {
+    // Normalisasi nama kolom (hapus spasi, ubah ke huruf kecil semua) agar kebal dari perubahan Header Excel
+    const normRow = {};
+    for(let key in row) {
+      normRow[key.toString().toLowerCase().replace(/[^a-z0-9]/g, '')] = typeof row[key] === 'string' ? row[key].trim() : row[key];
+    }
+
+    let kode = normRow['kode'] || normRow['kodesupplier'];
+    if(!kode) continue;
+
+    let existIdx = suppliers.findIndex(s => s.kode.toUpperCase() === kode.toString().toUpperCase());
+    
+    let rawHarga = normRow['hargamaterialrpm3'] || normRow['hargamaterial'] || normRow['harga'] || '0';
+    let material = normRow['jenismaterial'] || normRow['material'] || 'Batu Skrining';
+
+    // FIX OTOMATIS: Jika data bergeser (Harga masuk ke Kolom Material), kita perbaiki!
+    if (material.toString().toLowerCase().includes('rp') || (!isNaN(parseFloat(material.toString().replace(/[^0-9]/g,''))) && parseFloat(material.toString().replace(/[^0-9]/g,'')) > 1000)) {
+        rawHarga = material;
+        material = 'Batu Skrining';
+    }
+
+    let strHarga = rawHarga.toString().replace(/Rp|\s/gi, '').replace(/\./g, '').replace(/,/g, '.');
+    let fHarga = parseFloat(strHarga.replace(/[^0-9.-]/g, '')) || 0;
+    
+    // Auto correct Excel formatting (misal 210.000 kepotong dibaca 210 oleh Excel)
+    if(fHarga > 0 && fHarga <= 1000) fHarga = fHarga * 1000;
+
+    let angkutan = normRow['namaangkutan'] || normRow['angkutan'] || '';
+    if(angkutan === '—' || angkutan === '-') angkutan = '';
+
+    let obj = {
+      kode: kode.toString().toUpperCase(),
+      nama: normRow['namasupplier'] || normRow['nama'] || '',
+      angkutan: angkutan,
+      material: material,
+      harga: fHarga,
+      status: normRow['status'] || 'Aktif'
+    };
+
+    if(existIdx >= 0) { suppliers[existIdx] = obj; } 
+    else { suppliers.push(obj); }
+    imported++;
+  }
+  save(); renderSupplier(); ahpResult=computeAHP(); tlfResult=computeTLF();
+  showToast(imported + ' supplier berhasil diimpor.');
+}
+
+function processImportRiwayat(rows) {
+  let imported = 0;
+  for(let row of rows) {
+    const normRow = {};
+    for(let key in row) {
+      normRow[key.toString().toLowerCase().replace(/[^a-z0-9]/g, '')] = typeof row[key] === 'string' ? row[key].trim() : row[key];
+    }
+
+    let kode = normRow['kodesupplier'] || normRow['kode'] || normRow['supplier'];
+    if(!kode) continue;
+
+    let rawHarga = normRow['harga'] || normRow['hargam3'] || normRow['hargarpm3'] || '0';
+    let strHarga = rawHarga.toString().replace(/Rp|\s/gi, '').replace(/\./g, '').replace(/,/g, '.');
+    let fHarga = parseFloat(strHarga.replace(/[^0-9.-]/g, '')) || 0;
+    
+    // Auto correct Excel formatting (misal 210.000 dibaca 210 oleh Excel)
+    if(fHarga > 0 && fHarga <= 1000) fHarga = fHarga * 1000;
+
+    riwayat.push({
+      id: Date.now() + Math.random(),
+      no: normRow['noorder'] || normRow['no'] || ('ORD-IMP-' + Math.floor(Math.random()*1000)),
+      bulan: normRow['bulan'] || '2025-09',
+      kode: kode.toString().split(' ')[0].toUpperCase(),
+      material: normRow['material'] || normRow['jenismaterial'] || 'Batu Skrining',
+      qtyOrder: parseFloat((normRow['qtyorder']||'0').toString().replace(/,/g, '.')) || 0,
+      qtyDatang: parseFloat((normRow['qtydatang']||'0').toString().replace(/,/g, '.')) || 0,
+      reject: parseFloat((normRow['reject']||normRow['reject']||'0').toString().replace(/,/g, '.')) || 0,
+      harga: fHarga,
+      terlambat: parseFloat((normRow['keterlambatanhari']||normRow['terlambat']||'0').toString().replace(/,/g, '.')) || 0,
+    });
+    imported++;
+  }
+  save(); renderRiwayat(); ahpResult=computeAHP(); tlfResult=computeTLF();
+  showToast(imported + ' baris pesanan berhasil diimpor.');
+}
+
+// ================================================================
+// TOAST
+// ================================================================
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
 </body>
 </html>
