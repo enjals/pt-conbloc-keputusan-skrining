@@ -515,7 +515,7 @@ tr.row-worst td{background:rgba(192,57,43,.04)}
               <thead><tr><th>Kriteria</th><th style="text-align:right">A (Rp) — Kerugian 6 Bulan</th><th style="text-align:right">&Delta; — Std. Deviasi</th><th style="text-align:right">k</th></tr></thead>
               <tbody id="k-ltb-body"></tbody>
             </table></div>
-            <p style="font-size:12px; color:var(--text3); margin-top:12px; line-height:1.4;">*Nilai &Delta; untuk A5 dan A6 dihitung dari standar deviasi data aktual semua supplier.</p>
+            <p style="font-size:12px; color:var(--text3); margin-top:12px; line-height:1.4;">*Nilai Δ untuk A5 dan A6 merupakan standar deviasi data aktual semua supplier (sesuai skripsi). Nilai k sudah dibulatkan sesuai tabel perhitungan skripsi.</p>
           </div>
         </div>
       </div>
@@ -526,7 +526,7 @@ tr.row-worst td{background:rgba(192,57,43,.04)}
           <div class="alert alert-info"><i class="ti ti-info-circle"></i><span>Nilai diambil dari rata-rata riwayat pemesanan. Sel merah = melebihi toleransi. Anda dapat mengedit nilai A1-A6 secara manual di sini.</span></div>
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">A1 Reject (m³)</th><th style="text-align:right">A2 Harga (Rp/m³)</th><th style="text-align:right">A3 Terlambat (hr)</th><th style="text-align:right">A4 Volume (m³)</th><th style="text-align:right">A5 Pelayanan</th><th style="text-align:right">A6 Konsistensi</th></tr></thead>
+              <thead><tr><th>Kode</th><th>Supplier</th><th style="text-align:right">A1 Cacat (%)</th><th style="text-align:right">A2 Harga (Rp/m³)</th><th style="text-align:right">A3 Frek. Terlambat</th><th style="text-align:right">A4 Kekurangan Stok</th><th style="text-align:right">A5 Pelayanan</th><th style="text-align:right">A6 Konsistensi</th></tr></thead>
               <tbody id="tlf-data-body"></tbody>
             </table>
           </div>
@@ -660,11 +660,20 @@ const DEF_RIWAYAT = [
 ];
 
 // Nilai pelayanan dan konsistensi kualitas dari kuesioner
+// ovr_a1 = rata-rata cacat (%), ovr_a2 = harga (Rp/m³)
+// ovr_a3 = frek. keterlambatan/24 minggu, ovr_a4 = % kekurangan stok (desimal)
+// Data aktual sesuai skripsi (Tabel 4.8 dan Tabel 4.x)
 const DEF_SRF = {
-  S1:{layanan:0.91,konsistensi:0.92}, S2:{layanan:0.93,konsistensi:0.90}, S3:{layanan:0.89,konsistensi:0.91},
-  S4:{layanan:0.63,konsistensi:0.61}, S5:{layanan:0.58,konsistensi:0.89}, S6:{layanan:0.42,konsistensi:0.90},
-  S7:{layanan:0.38,konsistensi:0.43}, S8:{layanan:0.45,konsistensi:0.88}, S9:{layanan:0.62,konsistensi:0.91},
-  S10:{layanan:0.59,konsistensi:0.64},
+  S1: {layanan:0.91,konsistensi:0.92, ovr_a1:0,     ovr_a2:185000, ovr_a3:0,     ovr_a4:0},
+  S2: {layanan:0.93,konsistensi:0.90, ovr_a1:0,     ovr_a2:235000, ovr_a3:0,     ovr_a4:0},
+  S3: {layanan:0.89,konsistensi:0.91, ovr_a1:0,     ovr_a2:235000, ovr_a3:0,     ovr_a4:0},
+  S4: {layanan:0.63,konsistensi:0.61, ovr_a1:0.019, ovr_a2:210000, ovr_a3:0,     ovr_a4:0.1429},
+  S5: {layanan:0.58,konsistensi:0.89, ovr_a1:0,     ovr_a2:210000, ovr_a3:0.083, ovr_a4:0},
+  S6: {layanan:0.42,konsistensi:0.90, ovr_a1:0,     ovr_a2:250000, ovr_a3:0.042, ovr_a4:0},
+  S7: {layanan:0.38,konsistensi:0.43, ovr_a1:0.021, ovr_a2:250000, ovr_a3:0,     ovr_a4:0},
+  S8: {layanan:0.45,konsistensi:0.88, ovr_a1:0,     ovr_a2:250000, ovr_a3:0.042, ovr_a4:0},
+  S9: {layanan:0.62,konsistensi:0.91, ovr_a1:0,     ovr_a2:180000, ovr_a3:0.042, ovr_a4:0.2149},
+  S10:{layanan:0.59,konsistensi:0.64, ovr_a1:0.020, ovr_a2:215000, ovr_a3:0,     ovr_a4:0},
 };
 
 // AHP: nilai rata-rata kuesioner & tingkat kepentingan
@@ -676,11 +685,14 @@ const DEF_AHP_KRIT = [
 
 // Konstanta kerugian k
 const DEF_K_STB = [
-  {kode:'A1',nama:'Kualitas Material',A:85572.74,delta:6}, {kode:'A2',nama:'Harga',A:18470100,delta:250000},
-  {kode:'A3',nama:'Proses Pengiriman',A:600000,delta:2}, {kode:'A4',nama:'Ketersediaan Stok',A:5040000,delta:570},
+  {kode:'A1',nama:'Kualitas Material',A:85572.74,delta:6,k_fix:2377.02},
+  {kode:'A2',nama:'Harga',A:18470100,delta:250000,k_fix:0.000296},
+  {kode:'A3',nama:'Proses Pengiriman',A:600000,delta:2,k_fix:150000},
+  {kode:'A4',nama:'Ketersediaan Stok',A:5040000,delta:570,k_fix:15.51},
 ];
 const DEF_K_LTB = [
-  {kode:'A5',nama:'Pelayanan',A:150000,delta:0.205}, {kode:'A6',nama:'Konsistensi Kualitas',A:333000,delta:0.174},
+  {kode:'A5',nama:'Pelayanan',A:150000,delta:0.205,k_fix:6303.75},
+  {kode:'A6',nama:'Konsistensi Kualitas',A:333000,delta:0.174,k_fix:10081.91},
 ];
 
 // ================================================================
@@ -767,77 +779,78 @@ function initApp(){
 // FORMAT HELPERS
 // ================================================================
 function fmtRp(n){return Math.round(n).toLocaleString('id-ID');}
+function fmtRp2(n){
+  // Format Rp dengan 2 desimal: 408963.11 → "408.963,11"
+  const [int,dec] = n.toFixed(2).split('.');
+  return parseInt(int).toLocaleString('id-ID') + ',' + dec;
+}
 function fmtDec(n,d=2){return n.toFixed(d).replace('.',',');}
 function fmtNum(n){
   if(!isFinite(n)) return '—';
   if(n>=1000) return Math.round(n).toLocaleString('id-ID');
-  return n.toFixed(n<0.01?6:2).replace('.',',');
+  if(n>=1) return n.toFixed(2).replace('.',',');
+  if(n>=0.0001) return n.toFixed(4).replace('.',',');
+  return n.toFixed(6).replace('.',',');
 }
 
 // ================================================================
 // AHP & TLF COMPUTATION
 // ================================================================
 function computeAHP(){
-  const krit = [...ahpKrit].sort((a,b)=>a.tk-b.tk);
-  const n = krit.length; 
-  
+  // Urutkan kriteria by KODE (A1-A6) sesuai layout matriks skripsi
+  const krit = [...ahpKrit].sort((a,b)=>a.kode.localeCompare(b.kode));
+  const n = krit.length;
+
+  // Matriks selisih tk[i] - tk[j]
   const selisih = [];
   for(let i=0;i<n;i++){
     selisih.push([]);
     for(let j=0;j<n;j++) selisih[i].push(krit[i].tk - krit[j].tk);
   }
-  
-  // Konversi selisih ke skala AHP: 0→1, -1→2, -2→3, -3→4, -4→5, -5→6
-  // Nilai positif = reciprocal: selisih +s → 1/(s+1)
+
+  // Konversi ke skala AHP
   function toAHP(s){
     if(s===0) return 1;
-    if(s<0) return Math.abs(s)+1; 
-    return 1/(s+1);                
+    if(s<0) return Math.abs(s)+1;
+    return 1/(s+1);
   }
   const matriks = selisih.map(row=>row.map(toAHP));
-  
-  // Jumlah kolom (tanpa rounding agar akurat)
+
+  // Jumlah kolom
   const colSum = Array(n).fill(0);
   for(let i=0;i<n;i++) for(let j=0;j<n;j++) colSum[j]+=matriks[i][j];
-  
-  // Helper rounding
-  const r2 = v => Math.round(v * 100) / 100;
-  const r3 = v => Math.round(v * 1000) / 1000;
-  
-  // Normalisasi: bulatkan ke 2 desimal sesuai cara perhitungan di skripsi
-  const normMat = matriks.map((row,i)=>row.map((v,j)=>r2(v/colSum[j])));
-  
-  // Jumlah baris dari normalisasi
+
+  const r2 = v => Math.round(v*100)/100;
+  const r3 = v => Math.round(v*1000)/1000;
+
+  // normMat untuk display (dibulatkan r2)
+  const normMat = matriks.map(row=>row.map((v,j)=>r2(v/colSum[j])));
+  // rowSum untuk display
   const rowSum = normMat.map(row=>r2(row.reduce((a,b)=>a+b,0)));
-  
-  // Bobot = rowSum / n, bulatkan ke 2 desimal
-  const bobot = rowSum.map(s=>r2(s/n));
-  
-  // Weighted Sum Vector: setiap elemen normMat x bobot_kolom dijumlahkan per baris
-  // Gunakan matriks asli (bukan normMat) × bobot sesuai cara skripsi
-  const wsv = Array(n).fill(0);
-  for(let i=0;i<n;i++) for(let j=0;j<n;j++) wsv[i] += r2(matriks[i][j] * bobot[j]);
-  const wsvRnd = wsv.map(v=>r2(v));
-  
-  // Nilai indeks = wsv / bobot, bulatkan ke 2 desimal
-  const nilaiIndeks = wsvRnd.map((w,i)=>r2(w/bobot[i]));
-  
-  // Lambda maks = rata-rata nilai indeks, bulatkan ke 2 desimal
+
+  // Bobot: dari normMat RAW (tidak dibulatkan) -> sum/n -> r2
+  const bobot = matriks.map((row,i)=>r2(row.reduce((s,v,j)=>s+v/colSum[j],0)/n));
+
+  // WSV: matriks[i][j] x bobot[j] dibulatkan r2 per elemen, lalu dijumlah r2
+  const wsv = matriks.map(row=>r2(row.map((v,j)=>r2(v*bobot[j])).reduce((a,b)=>a+b,0)));
+
+  // nilaiIndeks = r2(wsv/bobot)
+  const nilaiIndeks = wsv.map((w,i)=>r2(w/bobot[i]));
+
+  // lambdaMaks = r2(rata-rata nilaiIndeks)
   const lambdaMaks = r2(nilaiIndeks.reduce((a,b)=>a+b,0)/n);
-  
-  // CI = (lambda - n) / (n - 1), bulatkan ke 3 desimal
-  const CI = r3((lambdaMaks - n)/(n-1));
-  
-  // CR = CI / RI(n=6) = CI / 1.24, bulatkan ke 2 desimal
-  const CR = r2(CI/1.24); 
-  
-  return {krit, selisih, matriks, colSum, normMat, rowSum, bobot, wsv:wsvRnd, nilaiIndeks, lambdaMaks, CI, CR, n};
+
+  // CI dan CR
+  const CI = r3((lambdaMaks-n)/(n-1));
+  const CR = r2(CI/1.24);
+
+  return {krit, selisih, matriks, colSum, normMat, rowSum, bobot, wsv, nilaiIndeks, lambdaMaks, CI, CR, n};
 }
 
 let _computeTLF = function(){
   const ahp=ahpResult||computeAHP();
-  const kStbCalc=kSTB.map(k=>({...k,k:k.A/(k.delta*k.delta)}));
-  const kLtbCalc=kLTB.map(k=>({...k,k:k.A*(k.delta*k.delta)}));
+  const kStbCalc=kSTB.map(k=>({...k,k:k.k_fix!=null?k.k_fix:k.A/(k.delta*k.delta)}));
+  const kLtbCalc=kLTB.map(k=>({...k,k:k.k_fix!=null?k.k_fix:k.A*(k.delta*k.delta)}));
   const data=suppliers.map(s=>{
     const orders=riwayat.filter(r=>r.kode===s.kode);
     const nOrd=orders.length||1;
@@ -886,7 +899,7 @@ function renderDashboard(){
   const best = tlfResult.ranked[0];
   if(best){
     document.getElementById('d-best-sup').textContent = best.kode+' — '+best.nama;
-    document.getElementById('d-best-loss').textContent = 'Total kerugian: Rp '+fmtRp(best.total);
+    document.getElementById('d-best-loss').textContent = 'Total kerugian: Rp '+fmtRp2(best.total);
   }
   
   const rl = document.getElementById('d-ranking-list');
@@ -901,7 +914,7 @@ function renderDashboard(){
     rl.innerHTML+=`<div class="summary-row">
       <div class="sr-rank" style="background:${rankColors[i]||'#A0AEC0'};color:#fff">${i+1}</div>
       <div class="sr-name">${r.kode} — ${r.nama}</div>
-      <div class="sr-val">Rp ${fmtRp(r.total)}</div>
+      <div class="sr-val">Rp ${fmtRp2(r.total)}</div>
       ${isB?'<span class="badge badge-green">Terbaik</span>':isW?'<span class="badge badge-red">Terburuk</span>':''}
     </div>`;
   });
@@ -1297,12 +1310,12 @@ function renderKConstants(){
   });
 }
 
-const TOL_WARN={a1:0.05,a2:250000,a3:2,a4:389,a5:0.80,a6:0.90};
+const TOL_WARN={a1:0.05,a2:250000,a3:0.5,a4:0.05,a5:0.80,a6:0.90};
 function isWarn(field,val){
   if(field==='a1') return val>TOL_WARN.a1;
   if(field==='a2') return val>TOL_WARN.a2;
   if(field==='a3') return val>TOL_WARN.a3;
-  if(field==='a4') return val<TOL_WARN.a4;
+  if(field==='a4') return val>TOL_WARN.a4;
   if(field==='a5') return val<TOL_WARN.a5;
   if(field==='a6') return val<TOL_WARN.a6;
   return false;
@@ -1344,15 +1357,19 @@ function renderLY(){
   const tb=document.getElementById('ly-body');
   tb.innerHTML='';
   results.forEach(r=>{
+    // Format sesuai skripsi: A1 max 8 desimal, A2 Rp bulat, A3 2 desimal,
+    // A4 max 9 desimal (sangat kecil), A5&A6 2 desimal
+    const fmtLy1 = r.ly1===0?'0':r.ly1.toFixed(8).replace(/\.?0+$/,'').replace('.',',');
+    const fmtLy4 = r.ly4===0?'0':r.ly4.toFixed(9).replace(/\.?0+$/,'').replace('.',',');
     tb.innerHTML+=`<tr>
       <td><span class="chip chip-navy">${r.kode}</span></td>
       <td style="font-weight:600">${r.nama}</td>
-      <td class="tbl-num">${fmtDec(r.ly1,3)}</td>
+      <td class="tbl-num">${fmtLy1}</td>
       <td class="tbl-num">${fmtRp(r.ly2)}</td>
       <td class="tbl-num">${fmtDec(r.ly3,2)}</td>
-      <td class="tbl-num">${fmtDec(r.ly4,2)}</td>
+      <td class="tbl-num">${fmtLy4}</td>
       <td class="tbl-num">${fmtDec(r.ly5,2)}</td>
-      <td class="tbl-num">${fmtDec(r.ly6,2)}</td>
+      <td class="tbl-num">${fmtDec(r.ly6,1)}</td>
     </tr>`;
   });
 }
@@ -1374,7 +1391,7 @@ function renderRanking(){
       <td class="tbl-num">${fmtDec(r.wly4,2)}</td>
       <td class="tbl-num">${fmtDec(r.wly5,2)}</td>
       <td class="tbl-num">${fmtDec(r.wly6,2)}</td>
-      <td class="tbl-num" style="font-weight:800; color:var(--navy);">Rp ${fmtRp(r.total)}</td>
+      <td class="tbl-num" style="font-weight:800; color:var(--navy);">Rp ${fmtRp2(r.total)}</td>
       <td>${isB?'<span class="badge badge-green">Terbaik</span>':isW?'<span class="badge badge-red">Terburuk</span>':'—'}</td>
     </tr>`;
   });
